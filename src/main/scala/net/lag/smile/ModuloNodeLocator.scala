@@ -25,33 +25,33 @@ import scala.collection.mutable
  * Locate a node by taking the mod of the key's hash against the number of servers. This is
  * the default memcache node locator.
  */
-class ModuloNodeLocator(hasher: KeyHasher) extends NodeLocator {
+// class ModuloNodeLocator(hasher: KeyHasher) extends NodeLocator {
 
-  def this() = this(KeyHasher.CRC32_ITU)
-
-  var pool: ServerPool = null
-  var continuum: Array[MemcacheConnection] = null
-
-  def setPool(pool: ServerPool) = {
-    this.pool = pool
-    val stack = new mutable.ListBuffer[MemcacheConnection]
-    for (s <- pool.liveServers) {
-      for (i <- 1 to s.weight) {
-        stack += s
-      }
-    }
-    continuum = stack.toArray
-  }
-
-  /**
-   * Return the server node that should contain this key.
-   */
-  def findNode(key: Array[Byte]): MemcacheConnection = {
-    val index = (hasher.hashKey(key) % continuum.size).toInt
-    continuum(index)
-  }
-
-  override def toString() = {
-    "<RoundRobinNodeLocator hash=%s>".format(hasher)
-  }
-}
+//  def this() = this(KeyHasher.CRC32_ITU)
+//
+//  var pool: ServerPool = null
+//  var continuum: Array[ConnectionPool] = null
+//
+//  def setPool(pool: ServerPool) = {
+//    this.pool = pool
+//    val stack = new mutable.ListBuffer[ConnectionPool]
+//    for (s <- pool.liveServers) {
+//      for (i <- 1 to 2) {
+//        stack += s
+//      }
+//    }
+//    continuum = stack.toArray
+//  }
+//
+//  /**
+//   * Return the server node that should contain this key.
+//   */
+//  def findNode(key: Array[Byte]): MemcacheConnection = {
+//    val index = (hasher.hashKey(key) % continuum.size).toInt
+//    continuum(index).reserve()()
+//  }
+//
+//  override def toString() = {
+//    "<RoundRobinNodeLocator hash=%s>".format(hasher)
+//  }
+// }

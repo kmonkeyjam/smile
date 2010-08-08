@@ -53,7 +53,7 @@ object SequentialNodeLocatorSpec extends Specification {
   def newTestLocator(addresses: List[String]) = {
     val pool = new ServerPool
     val connections = for (s <- addresses) yield ServerPool.makeConnection(s, pool)
-    pool.servers = connections.toArray
+    pool.connectionPools = connections.toArray
     val locator = new SequentialNodeLocator
     locator.setPool(pool)
     locator

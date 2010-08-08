@@ -43,7 +43,7 @@ class MemcacheClientSpec extends Specification with JMocker {
       connection.pool = pool
       connections += connection
     }
-    pool.servers = connections.toArray
+    pool.connectionPools = connections.toArray
     client = new MemcacheClient(locator, MemcacheCodec.UTF8)
     expect { one(locator).setPool(any) }
     client.setPool(pool)

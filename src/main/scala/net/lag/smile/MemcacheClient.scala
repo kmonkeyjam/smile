@@ -61,7 +61,7 @@ class MemcacheClient[T](locator: NodeLocator, codec: MemcacheCodec[T]) {
   /**
    * Return the list of memcache server connections.
    */
-  def servers = pool.servers
+  def servers = pool.connectionPools
 
 
   /**
@@ -457,7 +457,11 @@ class MemcacheClient[T](locator: NodeLocator, codec: MemcacheCodec[T]) {
   private def withNode[T](key: String)(f: (MemcacheConnection, String) => T): T = {
     checkForUneject()
     val (node, realKey) = nodeForKey(key)
-    withNode(node) { f(node, realKey) }
+    withNode(node) {
+      val conn = f(node, realKey)
+      node.connectionPool.release(node)
+      conn
+    }
   }
 
   private def withNode[T](node: MemcacheConnection)(f: => T): T = {
@@ -512,11 +516,11 @@ object MemcacheClient {
    */
   def create[T](servers: Array[MemcacheConnection], locator: NodeLocator,
                 codec: MemcacheCodec[T]): MemcacheClient[T] = {
-    val client = new MemcacheClient(locator, codec)
-    val pool = new ServerPool
-    pool.servers = servers
-    client.setPool(pool)
-    client
+    new MemcacheClient(locator, codec)
+//    val pool = new ServerPool
+//    pool.servers = servers
+//    client.setPool(pool)
+//    client
   }
 
   /**
@@ -548,8 +552,8 @@ object MemcacheClient {
    */
   def create(servers: Array[String], distribution: String, hash: String) = {
     val pool = new ServerPool
-    val connections = for (s <- servers) yield ServerPool.makeConnection(s, pool)
-    pool.servers = connections
+    val connections = for (s <- servers) yield new ConnectionPool(pool.numConnectionsPerServer, s, pool)
+    pool.connectionPools = connections
 
     val locator = NodeLocator.byName(distribution) match {
       case (hashName, factory) => factory(KeyHasher.byName(hash))

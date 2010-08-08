@@ -38,11 +38,11 @@ object ServerPoolSpec extends Specification {
       getClass.getClassLoader.getResourceAsStream("ketama_results").read()
       val config = Config.fromResource("test1.conf", getClass.getClassLoader)
       val pool = ServerPool.fromConfig(config.configMap("memcache"))
-      pool.servers.size mustEqual 77
-      pool.servers(0).toString must include("daemon001:11211 weight=1")
-      pool.servers(1).toString must include("daemon002:11211 weight=1")
-      pool.servers(23).toString must include("cluster007:11211 weight=1")
-      pool.servers(76).toString must include("cluster068:11211 weight=2")
+      pool.connectionPools.size mustEqual 77
+      pool.connectionPools(0).toString must include("daemon001:11211 weight=1")
+      pool.connectionPools(1).toString must include("daemon002:11211 weight=1")
+      pool.connectionPools(23).toString must include("cluster007:11211 weight=1")
+      pool.connectionPools(76).toString must include("cluster068:11211 weight=2")
       pool.readTimeout mustEqual 3000
       pool.retryDelay mustEqual 42000
       pool.connectTimeout mustEqual 266

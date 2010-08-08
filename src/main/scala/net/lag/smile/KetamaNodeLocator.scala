@@ -27,7 +27,7 @@ class KetamaNodeLocator(hasher: KeyHasher) extends NodeLocator {
   private val NUM_REPS = 160
 
   private var pool: ServerPool = null
-  private val continuum = new jcl.TreeMap[Long, MemcacheConnection]
+  private val continuum = new jcl.TreeMap[Long, ConnectionPool]
 
 
   def this() = this(KeyHasher.KETAMA)
@@ -40,7 +40,7 @@ class KetamaNodeLocator(hasher: KeyHasher) extends NodeLocator {
   def findNode(key: Array[Byte]): MemcacheConnection = synchronized {
     val hash = hasher.hashKey(key)
     val tail = continuum.underlying.tailMap(hash)
-    continuum(if (tail.isEmpty) continuum.firstKey else tail.firstKey)
+    continuum(if (tail.isEmpty) continuum.firstKey else tail.firstKey).reserve()()
   }
 
   private def computeHash(key: String, alignment: Int) = {
@@ -58,18 +58,18 @@ class KetamaNodeLocator(hasher: KeyHasher) extends NodeLocator {
     val totalWeight = pool.liveServers.foldLeft(0.0) { _ + _.weight }
     continuum.clear
 
-    for (node <- pool.liveServers) {
-      val percent = node.weight.toDouble / totalWeight
+    for (connectionPool <- pool.liveServers) {
+      val percent = connectionPool.weight.toDouble / totalWeight
       // the tiny fudge fraction is added to counteract float errors.
       val itemWeight = (percent * serverCount * (NUM_REPS / 4) + 0.0000000001).toInt
       for (k <- 0 until itemWeight) {
-        val key = if (node.port == 11211) {
-          node.hostname + "-" + k
+        val key = if (connectionPool.port == 11211) {
+          connectionPool.hostname + "-" + k
         } else {
-          node.hostname + ":" + node.port + "-" + k
+          connectionPool.hostname + ":" + connectionPool.port + "-" + k
         }
         for (i <- 0 until 4) {
-          continuum += (computeHash(key, i) -> node)
+          continuum += (computeHash(key, i) -> connectionPool)
         }
       }
     }
@@ -80,6 +80,6 @@ class KetamaNodeLocator(hasher: KeyHasher) extends NodeLocator {
 
   override def toString() = {
     "<KetamaNodeLocator hash=%s nodes=%d servers=%d>".format(hasher, continuum.size,
-      pool.servers.size)
+      pool.connectionPools.size)
   }
 }

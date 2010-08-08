@@ -37,16 +37,17 @@ class ServerPool(trace: Boolean) {
   def this() = this(false)
 
   var threadPool = Executors.newCachedThreadPool
-  var servers: Array[MemcacheConnection] = Array()
+  var connectionPools: Array[ConnectionPool] = Array()
 
   // connections that were recently ejected but might come back:
-  private val watchList = new mutable.ListBuffer[MemcacheConnection]
+  private val watchList = new mutable.ListBuffer[ConnectionPool]
 
   private var DEFAULT_CONNECT_TIMEOUT = 250
   var retryDelay = 30000
   var readTimeout = 2000
   var connectTimeout = DEFAULT_CONNECT_TIMEOUT
   var maxFailuresBeforeEjection = 3
+  var numConnectionsPerServer = 3
 
   // note: this will create one thread per ServerPool
   var connector = new NioSocketConnector(new NioProcessor(threadPool))
@@ -62,72 +63,50 @@ class ServerPool(trace: Boolean) {
   connector.setHandler(new IoHandlerActorAdapter(session => null))
 
   def liveServers = {
-    servers.filter { !_.isEjected }
+    connectionPools.filter { !_.isServerDown }
   }
 
   // returns true if one or more ejected connections is ready to be tried again.
-  def shouldRecheckEjectedConnections = synchronized {
-    if (watchList.exists { !_.isEjected }) {
-      scanForEjections()
-      true
-    } else {
-      false
-    }
+  def shouldRecheckEjectedConnections: Boolean = synchronized {
+    false
+//    if (watchList.exists { !_.isServerDown }) {
+//      scanForEjections()
+//      true
+//    } else {
+//      false
+//    }
   }
 
   // scan the server list for ejected connections, and remember them so we can check them later.
   def scanForEjections() {
-    synchronized {
-      watchList.clear()
-      watchList ++= servers.filter { _.isEjected }
-    }
+//    synchronized {
+//      watchList.clear()
+//      watchList ++= servers.filter { _.isServerDown }
+//    }
   }
 
   def shutdown() = {
-    for (conn <- servers) {
+    for (conn <- connectionPools) {
       conn.shutdown
     }
-    servers = Array()
+    connectionPools = Array()
     connector.dispose
     threadPool.shutdown
   }
 
-  override def toString() = servers.mkString(", ")
+  override def toString() = connectionPools.mkString(", ")
 }
 
 
 object ServerPool {
-
-  val DEFAULT_PORT = 11211
-  val DEFAULT_WEIGHT = 1
-
-  /**
-   * Make a new MemcacheConnection out of a description string. A description string is:
-   * <hostname> [ ":" <port> [ " " <weight> ]]
-   * The default port is 11211 and the default weight is 1.
-   */
-  def makeConnection(desc: String, pool: ServerPool) = {
-    val connection = desc.split("[: ]").toList match {
-      case hostname :: Nil =>
-        new MemcacheConnection(hostname, DEFAULT_PORT, DEFAULT_WEIGHT)
-      case hostname :: port :: Nil =>
-        new MemcacheConnection(hostname, port.toInt, DEFAULT_WEIGHT)
-      case hostname :: port :: weight :: Nil =>
-        new MemcacheConnection(hostname, port.toInt, weight.toInt)
-      case _ =>
-        throw new IllegalArgumentException
-    }
-    connection.pool = pool
-    connection
-  }
 
   /**
    * Make a new ServerPool out of a config block.
    */
   def fromConfig(attr: ConfigMap) = {
     val pool = new ServerPool(attr.getBool("trace", false))
-    pool.servers = (for (desc <- attr.getList("servers")) yield makeConnection(desc, pool)).toArray
-    if (pool.servers.length == 0) throw new IllegalArgumentException("No servers specified")
+    pool.connectionPools = (for (desc <- attr.getList("servers")) yield new ConnectionPool(pool.numConnectionsPerServer, desc, pool)).toArray
+    if (pool.connectionPools.length == 0) throw new IllegalArgumentException("No servers specified")
 
     for (n <- attr.getInt("retry_delay_sec")) {
       pool.retryDelay = n * 1000

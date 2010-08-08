@@ -38,7 +38,7 @@ object KetamaNodeLocatorSpec extends Specification {
     )
     val pool = new ServerPool
     val connections = for (s <- servers) yield ServerPool.makeConnection(s, pool)
-    pool.servers = connections.toArray
+    pool.connectionPools = connections.toArray
     val ketama = new KetamaNodeLocator
     ketama.setPool(pool)
     ketama

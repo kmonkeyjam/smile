@@ -38,7 +38,7 @@ object ModuloNodeLocatorSpec extends Specification {
     )
     val pool = new ServerPool
     val connections = for (s <- servers) yield ServerPool.makeConnection(s, pool)
-    pool.servers = connections.toArray
+    pool.connectionPools = connections.toArray
     val locator = new ModuloNodeLocator
     locator.setPool(pool)
     locator
@@ -57,7 +57,7 @@ object ModuloNodeLocatorSpec extends Specification {
     )
     val pool = new ServerPool
     val connections = for (s <- servers) yield ServerPool.makeConnection(s, pool)
-    pool.servers = connections.toArray
+    pool.connectionPools = connections.toArray
     val locator = new ModuloNodeLocator
     locator.setPool(pool)
     locator

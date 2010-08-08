@@ -32,11 +32,26 @@ import org.apache.mina.core.session.IoSession
 import org.apache.mina.transport.socket.nio.NioSocketConnector
 
 
+class MemcacheConfig(var hostname: String, var port: Int, var weight: Int) {
+  def this(hostname: String, port: Int) {
+    this(hostname, port, 1)
+  }
+  
+  def this(hostname: String) {
+    this(hostname, 11211)
+  }
+}
+
 /**
  * Connection to and configuration for a memcache server, and an actor for handling requests.
  */
 class MemcacheConnection(val hostname: String, val port: Int, val weight: Int) {
+  def this(config: MemcacheConfig) {
+    this(config.hostname, config.port, config.weight)
+  }
+
   var pool: ServerPool = null
+  var connectionPool: ConnectionPool = null
 
   private val log = Logger.get
 
