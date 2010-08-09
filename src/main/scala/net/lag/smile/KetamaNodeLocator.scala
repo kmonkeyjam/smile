@@ -21,6 +21,7 @@ import net.lag.extensions._
 import scala.collection.jcl
 import java.nio.{ByteBuffer, ByteOrder}
 import java.security.MessageDigest
+import com.twitter.util.Future
 
 
 class KetamaNodeLocator(hasher: KeyHasher) extends NodeLocator {
@@ -37,10 +38,10 @@ class KetamaNodeLocator(hasher: KeyHasher) extends NodeLocator {
     createContinuum
   }
 
-  def findNode(key: Array[Byte]): MemcacheConnection = synchronized {
+  def findNode(key: Array[Byte]): Future[MemcacheConnection] = synchronized {
     val hash = hasher.hashKey(key)
     val tail = continuum.underlying.tailMap(hash)
-    continuum(if (tail.isEmpty) continuum.firstKey else tail.firstKey).reserve()()
+    continuum(if (tail.isEmpty) continuum.firstKey else tail.firstKey).reserve()
   }
 
   private def computeHash(key: String, alignment: Int) = {

@@ -37,7 +37,7 @@ object KetamaNodeLocatorSpec extends Specification {
       "10.0.1.8:11211 100"
     )
     val pool = new ServerPool
-    val connections = for (s <- servers) yield ServerPool.makeConnection(s, pool)
+    val connections = for (s <- servers) yield new ConnectionPool(1, s, pool)
     pool.connectionPools = connections.toArray
     val ketama = new KetamaNodeLocator
     ketama.setPool(pool)
@@ -64,11 +64,13 @@ object KetamaNodeLocatorSpec extends Specification {
       val ketama = newTestLocator
       var count = 0
       for (testcase <- expected) {
-        val connection = ketama.findNode(testcase(0).getBytes("utf-8"))
+        val future = ketama.findNode(testcase(0).getBytes("utf-8"))
+        val connection = future()
         if (connection.hostname != testcase(3)) {
           println("testcase line " + (count + 1))
         }
         connection.hostname mustEqual testcase(3)
+        connection.connectionPool.release(connection)
         count += 1
       }
     }
@@ -96,11 +98,13 @@ object KetamaNodeLocatorSpec extends Specification {
         )
       var count = 0
       for (testcase <- expected) {
-        val connection = ketama.findNode(testcase(0).getBytes("utf-8"))
+        val future = ketama.findNode(testcase(0).getBytes("utf-8"))
+        val connection = future()
         if (connection.hostname != testcase(1)) {
           println("testcase line " + (count + 1))
         }
         connection.hostname mustEqual testcase(1)
+        connection.connectionPool.release(connection)
         count += 1
       }
     }

@@ -22,6 +22,7 @@ import net.lag.logging.Logger
 import net.lag.extensions._
 import scala.actors.Futures
 import scala.collection.mutable
+import com.twitter.util.Future
 
 
 /**
@@ -111,23 +112,27 @@ class MemcacheClient[T](locator: NodeLocator, codec: MemcacheCodec[T]) {
   @throws(classOf[MemcacheServerException])
   def getData(keys: Array[String]): Map[String, Array[Byte]] = {
     val keyMap = new mutable.HashMap[String, String]
-    val nodeKeys = new mutable.HashMap[MemcacheConnection, mutable.ListBuffer[String]]
+    val nodeKeys = new mutable.HashMap[Future[MemcacheConnection], mutable.ListBuffer[String]]
     for (key <- keys) {
       val (node, realKey) = nodeForKey(key)
       keyMap(realKey) = key
       nodeKeys.getOrElseUpdate(node, new mutable.ListBuffer[String]) += realKey
     }
 
-    val futures: Iterable[scala.actors.Future[Map[String, MemcacheResponse.Value]]] = for ((node, keyList) <- nodeKeys) yield BulletProofFuture.future {
+    val futures: Iterable[scala.actors.Future[Map[String, MemcacheResponse.Value]]] = for ((future, keyList) <- nodeKeys) yield BulletProofFuture.future {
+      val node = future()
+      var result: Map[String, MemcacheResponse.Value] = null
       withNode(node) {
         try {
-          node.get(keyList.toArray)
+          result = node.get(keyList.toArray)
         } catch {
           case e: Exception =>
             log.error("Exception contacting %s: %s", node, e)
-            Map.empty
+            result = Map.empty
         }
       }
+      node.connectionPool.release(node)
+      result
     }
     Map.empty ++ (for (future <- futures; (key, value) <- future()) yield (keyMap(key), value.data))
   }
@@ -443,7 +448,7 @@ class MemcacheClient[T](locator: NodeLocator, codec: MemcacheCodec[T]) {
     }
   }
 
-  def nodeForKey(key: String): (MemcacheConnection, String) = {
+  def nodeForKey(key: String): (Future[MemcacheConnection], String) = {
     val realKey = namespace match {
       case None => key
       case Some(prefix) => prefix + key
@@ -456,11 +461,12 @@ class MemcacheClient[T](locator: NodeLocator, codec: MemcacheCodec[T]) {
 
   private def withNode[T](key: String)(f: (MemcacheConnection, String) => T): T = {
     checkForUneject()
-    val (node, realKey) = nodeForKey(key)
+    val (future, realKey) = nodeForKey(key)
+    val node = future()
     withNode(node) {
-      val conn = f(node, realKey)
+      val result = f(node, realKey)
       node.connectionPool.release(node)
-      conn
+      result
     }
   }
 

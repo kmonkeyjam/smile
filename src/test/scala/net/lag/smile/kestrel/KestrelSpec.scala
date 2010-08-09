@@ -41,12 +41,12 @@ object KestrelSpec extends Specification {
     }
 
 
-    "configure a mock" in {
-      val client1 = new KestrelClient(Config.fromMap(Map("mock" -> "true")))
-      val client2 = new KestrelClient(Config.fromMap(Map("servers" -> "localhost")))
-      client1.messageStore.getClass.toString.contains("Memory") mustBe true
-      client2.messageStore.getClass.toString.contains("Memory") mustBe false
-    }
+//    "configure a mock" in {
+//      val client1 = new KestrelClient(Config.fromMap(Map("mock" -> "true")))
+//      val client2 = new KestrelClient(Config.fromMap(Map("servers" -> "localhost")))
+//      client1.messageStore.getClass.toString.contains("Memory") mustBe true
+//      client2.messageStore.getClass.toString.contains("Memory") mustBe false
+//    }
 
     "set" in  {
       client.put("work", "apple")

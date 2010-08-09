@@ -18,6 +18,7 @@
 package net.lag.smile
 
 import scala.collection.mutable
+import com.twitter.util.Future
 
 
 /**
@@ -33,7 +34,7 @@ trait NodeLocator {
   /**
    * Return the server node that should contain this key.
    */
-  def findNode(key: Array[Byte]): MemcacheConnection
+  def findNode(key: Array[Byte]): Future[MemcacheConnection]
 }
 
 

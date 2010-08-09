@@ -5,7 +5,6 @@ import collection.mutable.ListBuffer
 
 class ConnectionPool(numItems: Int, val desc: String, val pool: ServerPool) extends FactoryPool[MemcacheConnection](numItems) {
   var connectionConfig: MemcacheConfig = null
-  val items: ListBuffer[Future[MemcacheConnection]] = new ListBuffer[Future[MemcacheConnection]]()
   /**
    * Make a new MemcacheConnection out of a description string. A description string is:
    * <hostname> [ ":" <port> [ " " <weight> ]]
@@ -50,9 +49,9 @@ class ConnectionPool(numItems: Int, val desc: String, val pool: ServerPool) exte
   }
 
   def makeItem(): Future[MemcacheConnection] = {
-    val conn = Future.constant(makeConnection(desc))
-    items.append(conn)
-    conn
+    println("MAKING NEW CONNECTION")
+    val conn = makeConnection(desc)
+    Future.constant(conn)
   }
 
   def isHealthy(connection: MemcacheConnection) = {
