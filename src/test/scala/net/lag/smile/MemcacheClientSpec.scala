@@ -1,31 +1,55 @@
-///*
-// * Copyright 2009 Twitter, Inc.
-// * Copyright 2009 Robey Pointer <robeypointer@gmail.com>
-// *
-// * Licensed under the Apache License, Version 2.0 (the "License"); you may
-// * not use this file except in compliance with the License. You may obtain
-// * a copy of the License at
-// *
-// *     http://www.apache.org/licenses/LICENSE-2.0
-// *
-// * Unless required by applicable law or agreed to in writing, software
-// * distributed under the License is distributed on an "AS IS" BASIS,
-// * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// * See the License for the specific language governing permissions and
-// * limitations under the License.
-// */
-//
-//package net.lag.smile
-//
-//import _root_.java.util.concurrent.CountDownLatch
-//import _root_.scala.collection.mutable
-//import _root_.com.twitter.xrayspecs.Time
-//import _root_.com.twitter.xrayspecs.TimeConversions._
-//import _root_.org.specs.Specification
-//import _root_.org.specs.mock.JMocker
-//import com.twitter.util.{FactoryPool, Future}
-//
-//class MemcacheClientSpec extends Specification with JMocker {
+/*
+ * Copyright 2009 Twitter, Inc.
+ * Copyright 2009 Robey Pointer <robeypointer@gmail.com>
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License"); you may
+ * not use this file except in compliance with the License. You may obtain
+ * a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+package net.lag.smile
+
+import _root_.java.util.concurrent.CountDownLatch
+import _root_.scala.collection.mutable
+import _root_.com.twitter.xrayspecs.Time
+import _root_.com.twitter.xrayspecs.TimeConversions._
+import _root_.org.specs.Specification
+import _root_.org.specs.mock.JMocker
+import com.twitter.util.{FactoryPool, Future}
+
+class MemcacheClientSpec extends Specification with JMocker {
+  "MemcacheClient" should {
+    "work" in {
+      val pool = new ConnectionPool(3, "localhost:11211 1", new ServerPool)
+
+      var conn = pool.reserve()()
+      conn.get("a")
+      conn.connectionPool.release(conn)
+
+      var conn2 = pool.reserve()()
+      conn2.get("a")
+      conn2.connectionPool.release(conn2)
+
+      var conn3 = pool.reserve()()
+      conn3.get("a")
+      conn3.connectionPool.release(conn3)
+
+      var conn4 = pool.reserve()()
+      conn4.get("a")
+      conn4.connectionPool.release(conn4)
+
+      println("FOO")
+    }
+  }
+}
 //  var pool: ServerPool = null
 //  val servers = new mutable.ListBuffer[FakeMemcacheConnection]
 //  var client: MemcacheClient[String] = null

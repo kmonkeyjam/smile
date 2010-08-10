@@ -116,6 +116,7 @@ class MemcacheConnection(val hostname: String, val port: Int, val weight: Int) {
         registerFailure()
         throw new MemcacheServerException(description)
       case GetResponse(values) =>
+        log.info("FETCHED RESPONSE")
         clearFailures()
         values match {
           case Nil => None

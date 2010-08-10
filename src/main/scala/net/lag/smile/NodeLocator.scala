@@ -34,7 +34,7 @@ trait NodeLocator {
   /**
    * Return the server node that should contain this key.
    */
-  def findNode(key: Array[Byte]): Future[MemcacheConnection]
+  def findNode(key: Array[Byte]): ConnectionPool
 }
 
 

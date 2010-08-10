@@ -64,8 +64,8 @@ object KetamaNodeLocatorSpec extends Specification {
       val ketama = newTestLocator
       var count = 0
       for (testcase <- expected) {
-        val future = ketama.findNode(testcase(0).getBytes("utf-8"))
-        val connection = future()
+        val pool = ketama.findNode(testcase(0).getBytes("utf-8"))
+        val connection = pool.reserve()()
         if (connection.hostname != testcase(3)) {
           println("testcase line " + (count + 1))
         }
@@ -98,8 +98,8 @@ object KetamaNodeLocatorSpec extends Specification {
         )
       var count = 0
       for (testcase <- expected) {
-        val future = ketama.findNode(testcase(0).getBytes("utf-8"))
-        val connection = future()
+        val pool = ketama.findNode(testcase(0).getBytes("utf-8"))
+        val connection = pool.reserve()()
         if (connection.hostname != testcase(1)) {
           println("testcase line " + (count + 1))
         }

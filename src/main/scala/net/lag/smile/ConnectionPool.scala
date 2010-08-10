@@ -49,7 +49,6 @@ class ConnectionPool(numItems: Int, val desc: String, val pool: ServerPool) exte
   }
 
   def makeItem(): Future[MemcacheConnection] = {
-    println("MAKING NEW CONNECTION")
     val conn = makeConnection(desc)
     Future.constant(conn)
   }
