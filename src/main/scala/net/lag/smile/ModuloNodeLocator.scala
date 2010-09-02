@@ -30,11 +30,11 @@ class ModuloNodeLocator(hasher: KeyHasher) extends NodeLocator {
   def this() = this(KeyHasher.CRC32_ITU)
 
   var pool: ServerPool = null
-  var continuum: Array[MemcacheConnection] = null
+  var continuum: Array[ConnectionWrapper] = null
 
   def setPool(pool: ServerPool) = {
     this.pool = pool
-    val stack = new mutable.ListBuffer[MemcacheConnection]
+    val stack = new mutable.ListBuffer[ConnectionWrapper]
     for (s <- pool.liveServers) {
       for (i <- 1 to s.weight) {
         stack += s
@@ -46,7 +46,7 @@ class ModuloNodeLocator(hasher: KeyHasher) extends NodeLocator {
   /**
    * Return the server node that should contain this key.
    */
-  def findNode(key: Array[Byte]): MemcacheConnection = {
+  def findNode(key: Array[Byte]): ConnectionWrapper = {
     val index = (hasher.hashKey(key) % continuum.size).toInt
     continuum(index)
   }

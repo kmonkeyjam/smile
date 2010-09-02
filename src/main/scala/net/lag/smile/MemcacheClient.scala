@@ -111,7 +111,7 @@ class MemcacheClient[T](locator: NodeLocator, codec: MemcacheCodec[T]) {
   @throws(classOf[MemcacheServerException])
   def getData(keys: Array[String]): Map[String, Array[Byte]] = {
     val keyMap = new mutable.HashMap[String, String]
-    val nodeKeys = new mutable.HashMap[MemcacheConnection, mutable.ListBuffer[String]]
+    val nodeKeys = new mutable.HashMap[ConnectionWrapper, mutable.ListBuffer[String]]
     for (key <- keys) {
       val (node, realKey) = nodeForKey(key)
       keyMap(realKey) = key
@@ -119,9 +119,9 @@ class MemcacheClient[T](locator: NodeLocator, codec: MemcacheCodec[T]) {
     }
 
     val futures: Iterable[scala.actors.Future[Map[String, MemcacheResponse.Value]]] = for ((node, keyList) <- nodeKeys) yield BulletProofFuture.future {
-      withNode(node) {
+      withNode(node.getConnection) {
         try {
-          node.get(keyList.toArray)
+          node.getConnection.get(keyList.toArray)
         } catch {
           case e: Exception =>
             log.error("Exception contacting %s: %s", node, e)
@@ -443,7 +443,7 @@ class MemcacheClient[T](locator: NodeLocator, codec: MemcacheCodec[T]) {
     }
   }
 
-  def nodeForKey(key: String): (MemcacheConnection, String) = {
+  def nodeForKey(key: String): (ConnectionWrapper, String) = {
     val realKey = namespace match {
       case None => key
       case Some(prefix) => prefix + key
@@ -457,7 +457,12 @@ class MemcacheClient[T](locator: NodeLocator, codec: MemcacheCodec[T]) {
   private def withNode[T](key: String)(f: (MemcacheConnection, String) => T): T = {
     checkForUneject()
     val (node, realKey) = nodeForKey(key)
-    withNode(node) { f(node, realKey) }
+    val connection: MemcacheConnection = node.getConnection
+    try {
+      withNode(connection) { f(connection, realKey) }
+    } finally {
+      node.releaseConnection(connection)  
+    }
   }
 
   private def withNode[T](node: MemcacheConnection)(f: => T): T = {
@@ -501,7 +506,7 @@ object MemcacheClient {
    * Create a new MemcacheClient from a server list and node locator, using
    * the UTF-8 codec.
    */
-  def create(servers: Array[MemcacheConnection], locator: NodeLocator): MemcacheClient[String] = {
+  def create(servers: Array[ConnectionWrapper], locator: NodeLocator): MemcacheClient[String] = {
     create(servers, locator, MemcacheCodec.UTF8)
   }
 
@@ -510,7 +515,7 @@ object MemcacheClient {
    * The codec will be the default mechanism for translating memcache items
    * to/from scala objects.
    */
-  def create[T](servers: Array[MemcacheConnection], locator: NodeLocator,
+  def create[T](servers: Array[ConnectionWrapper], locator: NodeLocator,
                 codec: MemcacheCodec[T]): MemcacheClient[T] = {
     val client = new MemcacheClient(locator, codec)
     val pool = new ServerPool

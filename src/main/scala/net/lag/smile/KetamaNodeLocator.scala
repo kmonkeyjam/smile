@@ -27,7 +27,7 @@ class KetamaNodeLocator(hasher: KeyHasher) extends NodeLocator {
   private val NUM_REPS = 160
 
   private var pool: ServerPool = null
-  private val continuum = new jcl.TreeMap[Long, MemcacheConnection]
+  private val continuum = new jcl.TreeMap[Long, ConnectionWrapper]
 
 
   def this() = this(KeyHasher.KETAMA)
@@ -37,7 +37,7 @@ class KetamaNodeLocator(hasher: KeyHasher) extends NodeLocator {
     createContinuum
   }
 
-  def findNode(key: Array[Byte]): MemcacheConnection = synchronized {
+  def findNode(key: Array[Byte]): ConnectionWrapper = synchronized {
     val hash = hasher.hashKey(key)
     val tail = continuum.underlying.tailMap(hash)
     continuum(if (tail.isEmpty) continuum.firstKey else tail.firstKey)

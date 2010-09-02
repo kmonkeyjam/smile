@@ -33,13 +33,13 @@ class SequentialNodeLocator(hasher: KeyHasher) extends NodeLocator {
   def this() = this(KeyHasher.CRC32_ITU)
 
   var pool: ServerPool = null
-  var continuum: Array[MemcacheConnection] = null
+  var continuum: Array[ConnectionWrapper] = null
   var count = 0
   var current = 0
 
   def setPool(pool: ServerPool) = {
     this.pool = pool
-    val fanout = new mutable.ArrayBuffer[MemcacheConnection]
+    val fanout = new mutable.ArrayBuffer[ConnectionWrapper]
     for (s <- pool.liveServers) {
       for (i <- 1 to s.weight) {
         fanout += s
@@ -47,7 +47,7 @@ class SequentialNodeLocator(hasher: KeyHasher) extends NodeLocator {
     }
 
     val rand = new Random(Time.now.inMilliseconds)
-    val randomized = new mutable.ListBuffer[MemcacheConnection]
+    val randomized = new mutable.ListBuffer[ConnectionWrapper]
     while (fanout.size > 0) {
       val idx = rand.nextInt(fanout.size)
       randomized += fanout(idx)
@@ -61,7 +61,7 @@ class SequentialNodeLocator(hasher: KeyHasher) extends NodeLocator {
   /**
    * Return the server node that should contain this key.
    */
-  def findNode(key: Array[Byte]): MemcacheConnection = {
+  def findNode(key: Array[Byte]): ConnectionWrapper = {
     this.synchronized {
       val rv = continuum(current)
       current = (current + 1) % count

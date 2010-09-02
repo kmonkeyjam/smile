@@ -31,11 +31,10 @@ import net.lag.naggati.{IoHandlerActorAdapter, MinaMessage}
 import org.apache.mina.core.session.IoSession
 import org.apache.mina.transport.socket.nio.NioSocketConnector
 
-
 /**
  * Connection to and configuration for a memcache server, and an actor for handling requests.
  */
-class MemcacheConnection(val hostname: String, val port: Int, val weight: Int) {
+class MemcacheConnection(val hostname: String, val port: Int, val weight: Int) extends ConnectionWrapper {
   var pool: ServerPool = null
 
   private val log = Logger.get
@@ -279,7 +278,14 @@ class MemcacheConnection(val hostname: String, val port: Int, val weight: Int) {
     session = None
   }
 
+  def getConnection: MemcacheConnection = {
+    this
+  }
 
+  def releaseConnection(node: MemcacheConnection) {
+    // Do nothing
+  }
+  
   //  ----------  actor
 
   private case object Stop

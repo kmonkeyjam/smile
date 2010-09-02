@@ -37,10 +37,10 @@ class ServerPool(trace: Boolean) {
   def this() = this(false)
 
   var threadPool = Executors.newCachedThreadPool
-  var servers: Array[MemcacheConnection] = Array()
+  var servers: Array[ConnectionWrapper] = Array()
 
   // connections that were recently ejected but might come back:
-  private val watchList = new mutable.ListBuffer[MemcacheConnection]
+  private val watchList = new mutable.ListBuffer[ConnectionWrapper]
 
   private var DEFAULT_CONNECT_TIMEOUT = 250
   var retryDelay = 30000
@@ -101,23 +101,37 @@ object ServerPool {
   val DEFAULT_PORT = 11211
   val DEFAULT_WEIGHT = 1
 
+  def makeConnection(desc: String, pool: ServerPool): ConnectionWrapper = {
+    makeConnection(desc, pool, 1)
+  }
+  
   /**
    * Make a new MemcacheConnection out of a description string. A description string is:
    * <hostname> [ ":" <port> [ " " <weight> ]]
    * The default port is 11211 and the default weight is 1.
    */
-  def makeConnection(desc: String, pool: ServerPool) = {
-    val connection = desc.split("[: ]").toList match {
+  def makeConnection(desc: String, pool: ServerPool, numConnections: Int): ConnectionWrapper = {
+    desc.split("[: ]").toList match {
       case hostname :: Nil =>
-        new MemcacheConnection(hostname, DEFAULT_PORT, DEFAULT_WEIGHT)
+        createConnection(hostname, DEFAULT_PORT, DEFAULT_WEIGHT, pool, numConnections)
       case hostname :: port :: Nil =>
-        new MemcacheConnection(hostname, port.toInt, DEFAULT_WEIGHT)
+        createConnection(hostname, port.toInt, DEFAULT_WEIGHT, pool, numConnections)
       case hostname :: port :: weight :: Nil =>
-        new MemcacheConnection(hostname, port.toInt, weight.toInt)
+        createConnection(hostname, port.toInt, weight.toInt, pool, numConnections)
       case _ =>
         throw new IllegalArgumentException
     }
-    connection.pool = pool
+  }
+
+  def createConnection(hostname: String, port: Int, weight: Int, pool: ServerPool, numConnections: Int) = {
+    val connection = if (numConnections > 1) {
+      println("CREATING NEW CONNECTION POOLS")
+      new ConnectionPool(hostname, port, weight, numConnections, pool)
+    } else {
+      val conn = new MemcacheConnection(hostname, port, weight)
+      conn.pool = pool
+      conn
+    }
     connection
   }
 
@@ -126,7 +140,7 @@ object ServerPool {
    */
   def fromConfig(attr: ConfigMap) = {
     val pool = new ServerPool(attr.getBool("trace", false))
-    pool.servers = (for (desc <- attr.getList("servers")) yield makeConnection(desc, pool)).toArray
+    pool.servers = (for (desc <- attr.getList("servers")) yield makeConnection(desc, pool, attr.getInt("num_connection_in_pool", 1))).toArray
     if (pool.servers.length == 0) throw new IllegalArgumentException("No servers specified")
 
     for (n <- attr.getInt("retry_delay_sec")) {
