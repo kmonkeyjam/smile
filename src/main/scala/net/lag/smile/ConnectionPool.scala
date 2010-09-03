@@ -12,7 +12,7 @@ class MemcacheConfig(var hostname: String, var port: Int, var weight: Int) {
   }
 }
 
-class ConnectionPool(val hostname: String, val port: Int, val weight: Int, numItems: Int, val pool: ServerPool) extends FactoryPool[MemcacheConnection](numItems) with ConnectionWrapper {
+class ConnectionPool(val hostname: String, val port: Int, val weight: Int, numItems: Int, val pool: ServerPool) extends FactoryPool[Throwable, MemcacheConnection](numItems) with ConnectionWrapper {
   def shutdown {
     // items.foreach ((conn: Future[MemcacheConnection]) => conn().)
   }
@@ -39,10 +39,10 @@ class ConnectionPool(val hostname: String, val port: Int, val weight: Int, numIt
   
   def eject() {}
 
-  def makeItem(): Future[MemcacheConnection] = {
+  def makeItem(): Future[Throwable, MemcacheConnection] = {
     val connection = new MemcacheConnection(hostname, port, weight)
     connection.pool = pool
-    Future.constant(connection)
+    Future(connection)
   }
 
   override def toString() = {
