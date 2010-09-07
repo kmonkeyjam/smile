@@ -17,27 +17,15 @@ class ConnectionPool(val hostname: String, val port: Int, val weight: Int, numIt
     // items.foreach ((conn: Future[MemcacheConnection]) => conn().)
   }
 
-  def connected = true
-
   def getConnection = {
     reserve()()
   }
 
+  def isEjected = false
+  
   def releaseConnection(node: MemcacheConnection) {
     release(node)
   }
-
-  def registerFailure() {}
-
-  def clearFailures() {}
-
-  def isServerDown = {
-    false
-  }
-
-  def isEjected: Boolean = false
-  
-  def eject() {}
 
   def makeItem(): Future[Throwable, MemcacheConnection] = {
     val connection = new MemcacheConnection(hostname, port, weight)
