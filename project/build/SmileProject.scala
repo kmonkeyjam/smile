@@ -3,7 +3,6 @@ import com.twitter.sbt.StandardProject
 
 
 class SmileProject(info: ProjectInfo) extends StandardProject(info) {
-  val scala0Repo = "scala0.net" at "http://scala0.net/repositories/"
   val specs = "org.scala-tools.testing" % "specs" % "1.6.2.1"
   val xrayspecs = "com.twitter" % "xrayspecs" % "1.0.7"
   val vscaladoc = "org.scala-tools" % "vscaladoc" % "1.1-md-3"
