@@ -136,9 +136,9 @@ class ManyGetsTest extends StressTest {
       cache.set(k, k)
     }
     for (s <- cache.servers) {
-      if (! s.connected) {
-        throw new Exception("not connected! to " + s)
-      }
+//      if (! s.connected) {
+//        throw new Exception("not connected! to " + s)
+//      }
     }
 
     val latch = new CountDownLatch(1)

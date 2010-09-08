@@ -62,7 +62,7 @@ class MemcacheConnection(val hostname: String, val port: Int, val weight: Int) e
         }
       case Some(s) => "connected"
     }
-    "<MemcacheConnection %s:%d weight=%d (%s)>".format(hostname, port, weight, status)
+    "<MemcacheConnection %s:%d weight=%d (%s)> %s".format(hostname, port, weight, status, super.toString)
   }
 
   /**
@@ -273,6 +273,7 @@ class MemcacheConnection(val hostname: String, val port: Int, val weight: Int) e
     session match {
       case None =>
         if (isEjected) {
+          log.info("EJECTED")
           return Some(ConnectionEjected)
         } else {
           connect

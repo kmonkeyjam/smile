@@ -40,6 +40,6 @@ class ConnectionPool(val hostname: String, val port: Int, val weight: Int, numIt
   def isHealthy(connection: MemcacheConnection) = {
     // I think this isHealthy check is going to be redundant with the MemcacheClient logic to
     // reject ejected connections.  Not sure which model is better.
-    true
+    !connection.isEjected
   }
 }

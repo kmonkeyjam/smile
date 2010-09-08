@@ -472,7 +472,7 @@ class MemcacheClient[T](locator: NodeLocator, codec: MemcacheCodec[T]) {
         throw e
       case e: MemcacheServerException =>
         if (node.isEjected) {
-          log.info("Ejecting from pool: %s", node)
+          log.info("Ejecting from pool: %s, %s", node, e.getMessage)
           checkForEject()
         }
         throw e

@@ -66,20 +66,27 @@ class ServerPool(trace: Boolean) {
   }
 
   // returns true if one or more ejected connections is ready to be tried again.
-  def shouldRecheckEjectedConnections = synchronized {
-    if (watchList.exists { !_.isEjected }) {
-      scanForEjections()
-      true
-    } else {
-      false
+  def shouldRecheckEjectedConnections = {
+    if (ServerPool.manageEjections) {
+      synchronized {
+        if (watchList.exists { !_.isEjected }) {
+          scanForEjections()
+          true
+        } else {
+          false
+        }
+      }
     }
+    false
   }
 
   // scan the server list for ejected connections, and remember them so we can check them later.
   def scanForEjections() {
-    synchronized {
-      watchList.clear()
-      watchList ++= servers.filter { _.isEjected }
+    if (ServerPool.manageEjections) {
+      synchronized {
+        watchList.clear()
+        watchList ++= servers.filter { _.isEjected }
+      }
     }
   }
 
@@ -97,7 +104,7 @@ class ServerPool(trace: Boolean) {
 
 
 object ServerPool {
-
+  var manageEjections = true
   val DEFAULT_PORT = 11211
   val DEFAULT_WEIGHT = 1
 
@@ -126,6 +133,7 @@ object ServerPool {
   def createConnection(hostname: String, port: Int, weight: Int, pool: ServerPool, numConnections: Int) = {
     val connection = if (numConnections > 1) {
       println("CREATING NEW CONNECTION POOLS")
+      manageEjections = false
       new ConnectionPool(hostname, port, weight, numConnections, pool)
     } else {
       val conn = new MemcacheConnection(hostname, port, weight)
